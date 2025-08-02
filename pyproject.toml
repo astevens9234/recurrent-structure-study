@@ -1,0 +1,13 @@
+[project]
+name = "recurrent-structure-study"
+version = "0.0.1"
+requires-python = ">=3.13"
+classifiers = [
+    "Private :: Do Not Upload"
+]
+dependencies = ["torch"]
+
+[project.optional-dependencies]
+dev = ["black"]
+
+[project-scripts] # formatting, linting, testing, etc
