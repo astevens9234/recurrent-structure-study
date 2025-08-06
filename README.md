@@ -8,4 +8,3 @@
 <github.com/riflosnake/humancursor>
 
 ##### Citations:
-- First pass stock data provided by <https://www.kaggle.com/datasets/donutkashvi/mousegan>
