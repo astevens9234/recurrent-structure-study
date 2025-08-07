@@ -1,4 +1,7 @@
-"""Script to log mouse activity, future training data."""
+"""Script to log mouse activity, future training data.
+
+c.f. <https://pynput.readthedocs.io/en/latest/mouse.html>
+"""
 
 import csv
 import sys
@@ -10,8 +13,13 @@ from datetime import datetime as dt
 file = input("Enter filename: ") + ".csv"
 cols = ["ts", "event", "x", "y", "button", "action"]
 last_move_time = 0
-interval = 0.05  # 50ms
+# interval = 0.05  # 50ms
+interval = 0.1  # 100ms
 
+##### NOTE #####
+# features: acceleration    ax = dvx/dt & ay = dvy/dt
+#           magnitude       sqrt(ax^2 + ay^2)
+################
 
 def write_to_csv(event, x, y, button=None, action=None):
     with open(file, "a", newline="") as f:
