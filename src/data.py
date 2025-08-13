@@ -5,6 +5,11 @@ import os
 import pandas as pd
 import torch
 
+from sklearn.preprocessing import OneHotEncoder
+
+pd.set_option("future.no_silent_downcasting", True)
+pd.options.mode.chained_assignment = None
+
 
 class MouseDataset(torch.utils.data.Dataset):
     """Dataset of mouse movements captured from mouse_listener.py"""
@@ -48,32 +53,68 @@ class Sequence(object):
 class Wrangle(object):
     """Wrangling of individual pathes."""
 
+    def __init__(self):
+        self.encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
+        self.col_space = ["button", "action", "event"]
+        self.all_cols = [
+            "ts",
+            "x",
+            "y",
+            "action_press",
+            "action_released",
+            "action_nan",
+            "button_Button",
+            "button_nan",
+            "button_delta",
+            "delta_x_coord",
+            "delta_y_coord",
+            "event_click",
+            "event_scroll",
+            "event_move",
+        ]
+
     def __call__(self, sample):
         for j in range(0, len(sample)):
             ts_min = sample[j]["ts"].min()
             sample[j]["ts"] = sample[j]["ts"] - ts_min
-            sample[j]["event"] = (
-                sample[j]["event"].replace({"move": 0, "click": 1}).astype(int)
-            )
-            sample[j]["button"] = (
-                sample[j]["button"]
-                .replace({"Button.left": 1, "Button.right": 2})
-                .fillna(0)
-                .astype(int)
-            )
-            sample[j]["action"] = (
-                sample[j]["action"]
-                .replace({"press": 1, "released": 2})
-                .fillna(0)
-                .astype(int)
-            )
+
+            sample[j] = self._split_deltas(sample[j])
+            sample[j] = self._encode(sample[j])
 
         return sample
+
+    def _split_deltas(self, frame):
+        splt = frame["button"].str.extract(r"\((-?\d+),(-?\d+)\)")
+        splt.columns = ["delta_x_coord", "delta_y_coord"]
+        frame["button"] = frame["button"].str.extract(r"(\w+)")[0]
+
+        splt["delta_x_coord"] = splt["delta_x_coord"].fillna(0).astype(int)
+        splt["delta_y_coord"] = splt["delta_y_coord"].fillna(0).astype(int)
+
+        return pd.merge(frame, splt, how="left", on=frame.index).drop(columns=["key_0"])
+
+    def _encode(self, frame):
+        encoded_data = self.encoder.fit_transform(frame[self.col_space])
+        result = pd.merge(
+            frame.drop(columns=self.col_space),
+            pd.DataFrame(
+                encoded_data, columns=self.encoder.get_feature_names_out(self.col_space)
+            ),
+            on=frame.index,
+            validate="1:1",
+        ).drop(columns="key_0")
+
+        # enforce column space
+        missing_cols = [c for c in self.all_cols if c not in result]
+        for col in missing_cols:
+            result[col] = 0
+
+        return result
 
 
 class ToTensor(object):
     """Convert sequences to tensors."""
-    
+
     def __call__(self, sample):
         tensor_list = [torch.tensor(s.values) for s in sample]
         return tensor_list

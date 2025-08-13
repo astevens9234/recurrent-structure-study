@@ -5,7 +5,7 @@ requires-python = ">=3.13"
 classifiers = [
     "Private :: Do Not Upload"
 ]
-dependencies = ["torch", "pynput", "pandas"]
+dependencies = ["torch", "pynput", "pandas", "scikit-learn"]
 
 [project.optional-dependencies]
 dev = ["black"]
